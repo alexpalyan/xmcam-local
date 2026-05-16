@@ -33,6 +33,7 @@ The project currently serves as a fully functional **Local Proxy Mock** that tri
 - **Go** 1.22 or newer.
 - **7-Zip** (on macOS: `brew install sevenzip`) — required to extract frontend files.
 
+
 ### 2. Prepare the Web Folder
 Since the interface files are the intellectual property of the manufacturer, they are not included in this repository. Use the provided script to automatically extract them from the official installer:
 
