@@ -1,0 +1,10 @@
+# Binaries
+xmcam-local
+main
+
+# Assets (Extracted via script)
+Web/
+VideoPlayToolSetup.exe
+
+# OS files
+.DS_Store

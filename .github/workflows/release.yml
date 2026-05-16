@@ -1,0 +1,79 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+jobs:
+  build:
+    name: Build for Multiple Platforms
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.20'
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          EXT=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
+          go build -ldflags="-s -w" -o xmcam-local-${{ matrix.goos }}-${{ matrix.goarch }}$EXT main.go
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xmcam-local-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: xmcam-local-${{ matrix.goos }}-${{ matrix.goarch }}*
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Zip and Prepare Assets
+        run: |
+          mkdir -p release_assets
+          # Collect all binaries into the release_assets folder
+          find artifacts -type f -name "xmcam-local-*" -exec cp {} release_assets/ \;
+          # Add the extraction script to each release, so users have it handy
+          cp extract_web_assets.sh release_assets/ || true
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release_assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
